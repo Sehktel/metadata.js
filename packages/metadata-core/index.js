@@ -2803,7 +2803,7 @@ class CatObj extends DataObj {
 
 }
 
-let NumberDocAndDate = superclass => class extends superclass {
+const NumberDocAndDate = superclass => class extends superclass {
 	get number_doc() {
 		return this._obj.number_doc || "";
 	}
