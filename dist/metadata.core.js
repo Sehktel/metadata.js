@@ -1,6 +1,6 @@
 /*!
- metadata.js v0.12.226, built:2017-05-22 &copy; Evgeniy Malyarov http://www.oknosoft.ru 2014-2016
- metadata.js may be freely distributed under the AGPL-3.0. To obtain _Oknosoft Commercial license_, contact info@oknosoft.ru
+ metadata.js v0.12.231, built:2017-06-22 &copy; Evgeniy Malyarov http://www.oknosoft.ru 2014-2017
+ metadata.js may be freely distributed under the MIT. To obtain _Oknosoft Commercial license_, contact info@oknosoft.ru
  */
 (function(root, factory) {
   if (typeof define === 'function' && define.amd) {
@@ -21,7 +21,7 @@
  */
 
 
-"use strict";
+;"use strict";
 
 /**
  * Фреймворк добавляет в прототипы _Object_ и _Number_<br />
@@ -110,7 +110,7 @@ Object.defineProperties(Object.prototype, {
 	 * @returns {Object|Array} - копия объекта
 	 */
 	_clone: {
-		value: function(exclude) {
+		value: function(exclude, str_date) {
 			if(!this || "object" !== typeof this)
 				return this;
 			var p, v, c = "function" === typeof this.pop ? [] : {};
@@ -121,22 +121,39 @@ Object.defineProperties(Object.prototype, {
 				if (this.hasOwnProperty(p)){
 					v = this[p];
 					if(v){
-						if("function" === typeof v || v instanceof DataObj || v instanceof DataManager || v instanceof Date)
-							c[p] = v;
-
-						else if("object" === typeof v)
-							c[p] = v._clone(exclude);
-
-						else
-							c[p] = v;
-					} else
-						c[p] = v;
+						if("function" === typeof v || v instanceof DataObj || v instanceof DataManager){
+              c[p] = v;
+            }
+						else if("object" === typeof v){
+              if(v instanceof Date){
+                c[p] = str_date ? v.toJSON() : v;
+              }
+              else{
+                c[p] = v._clone(exclude, str_date);
+              }
+            }
+						else{
+              c[p] = v;
+            }
+					}
+					else{
+            c[p] = v;
+          }
 				}
 			}
 			return c;
 		}
 	}
 });
+
+/**
+ * Отбрасываем часовой пояс при сериализации даты
+ * @method toJSON
+ * @for Date
+ */
+Date.prototype.toJSON = function () {
+  return $p.moment(this).format($p.moment._masks.iso);
+}
 
 /**
  * Метод округления в прототип числа
@@ -300,7 +317,7 @@ function MetaEngine() {
 	this.__define({
 
 		version: {
-			value: "0.12.226",
+			value: "0.12.231",
 			writable: false
 		},
 
@@ -506,7 +523,7 @@ function MetaEngine() {
 								ok = sel.some(function (element) {
 									var key = Object.keys(element)[0];
 									if(element[key].hasOwnProperty("like"))
-										return o[key] && o[key].toLowerCase().indexOf(element[key].like.toLowerCase())!=-1;
+										return typeof o[key] == "string" && o[key].toLowerCase().indexOf(element[key].like.toLowerCase())!=-1;
 									else
 										return $p.utils.is_equal(o[key], element[key]);
 								});
@@ -645,14 +662,20 @@ function MetaEngine() {
 		 */
 		off: {
 			value: function (id) {
+			  if(arguments.length == 2){
+          id = arguments[1];
+        }
 				if(typeof id == "function" && id._evnts){
 					id._evnts.forEach(function (id) {
 						$p.eve.detachEvent(id);
 					});
-				}else if(!id)
-					$p.eve.detachAllEvents();
-				else
-					$p.eve.detachEvent(id);
+				}
+				else if(!id){
+          $p.eve.detachAllEvents();
+        }
+				else{
+          $p.eve.detachEvent(id);
+        }
 			}
 		},
 
@@ -865,7 +888,7 @@ function MetaEngine() {
 				 * @static
 				 */
 					function ChartsOfAccounts(){
-					this.toString = function(){return $p.msg.meta_charts_of_accounts_mgr};
+					this.toString = function(){return $p.msg.meta_cacc_mgr};
 				})
 		},
 
@@ -887,7 +910,7 @@ function MetaEngine() {
 				 * @static
 				 */
 					function ChartsOfCharacteristics(){
-					this.toString = function(){return $p.msg.meta_charts_of_characteristic_mgr};
+					this.toString = function(){return $p.msg.meta_cch_mgr};
 				})
 		},
 
@@ -1210,7 +1233,7 @@ function Utils() {
 
 	/**
 	 * ### Добавляет days дней к дате
-	 *
+	 * и сбрасывает время в 00:00:00
 	 * @method date_add_day
 	 * @param date {Date} - исходная дата
 	 * @param days {Number} - число дней, добавляемых к дате (может быть отрицательным)
@@ -1323,10 +1346,16 @@ function Utils() {
 			reader.onerror = function(err){
 				reject(err);
 			};
-			if(type == "data_url")
-				reader.readAsDataURL(blob);
-			else
-				reader.readAsText(blob);
+			switch (type) {
+        case "array" :
+          reader.readAsArrayBuffer(blob);
+          break;
+        case "data_url":
+          reader.readAsDataURL(blob);
+          break;
+        default:
+          reader.readAsText(blob);
+      }
 		});
 
 	};
@@ -1612,19 +1641,23 @@ function Ajax() {
 			return wnd_print;
 		}
 
-		if(!method || (typeof method == "string" && method.toLowerCase().indexOf("post")!=-1))
-			return this.post_ex(url,
-				typeof post_data == "object" ? JSON.stringify(post_data) : post_data,
-				true,
-				function(xhr){
-					xhr.responseType = "blob";
-				})
-				.then(show_blob);
-		else
-			return this.get_ex(url, true, function(xhr){
-					xhr.responseType = "blob";
-				})
-				.then(show_blob);
+    if(url instanceof Blob){
+      Promise.resolve(show_blob({response: url}));
+    }
+    else if(!method || (typeof method == "string" && method.toLowerCase().indexOf("post")!=-1))
+      return this.post_ex(url,
+        typeof post_data == "object" ? JSON.stringify(post_data) : post_data,
+        true,
+        function(xhr){
+          xhr.responseType = "blob";
+        })
+        .then(show_blob);
+    else{
+      return this.get_ex(url, true, function(xhr){
+        xhr.responseType = "blob";
+      })
+        .then(show_blob);
+    }
 	};
 
 	/**
@@ -1848,7 +1881,7 @@ function WSQL(){
 					return prm;
 			}
 		},
-    
+
 		/**
 		 * ### Указатель на alasql
 		 * @property alasql
@@ -1898,6 +1931,7 @@ function WSQL(){
 					{p: "browser_uid",		v: $p.utils.generate_guid(), t:"string"},
 					{p: "zone",           v: $p.job_prm.hasOwnProperty("zone") ? $p.job_prm.zone : 1, t: $p.job_prm.zone_is_string ? "string" : "number"},
 					{p: "enable_save_pwd",v: $p.job_prm.enable_save_pwd,	t:"boolean"},
+          {p: "couch_direct",   v: $p.job_prm.hasOwnProperty("couch_direct") ? $p.job_prm.couch_direct : true,	t:"boolean"},
 					{p: "couch_path",		  v: $p.job_prm.couch_path,	t:"string"},
           {p: "rest_path",		  v: "", t:"string"},
 					{p: "skin",		        v: "dhx_web", t:"string"},
@@ -2236,8 +2270,8 @@ if(typeof window !== "undefined" && window.dhx4){
 	msg.meta_task_mgr = "Менеджер задач";
 	msg.meta_bp_mgr = "Менеджер бизнес-процессов";
 	msg.meta_reports_mgr = "Менеджер отчетов";
-	msg.meta_charts_of_accounts_mgr = "Менеджер планов счетов";
-	msg.meta_charts_of_characteristic_mgr = "Менеджер планов видов характеристик";
+	msg.meta_cacc_mgr = "Менеджер планов счетов";
+	msg.meta_cch_mgr = "Менеджер планов видов характеристик";
 	msg.meta_extender = "Модификаторы объектов и менеджеров";
 
 	msg.modified_close = "Объект изменен<br/>Закрыть без сохранения?";
@@ -2461,7 +2495,7 @@ function Pouch(){
             // широковещательное оповещение об окончании загрузки локальных данных
             if(t.local._loading){
               return new Promise(function (resolve, reject) {
-                $p.eve.attachEvent("pouch_load_data_loaded", resolve);
+                $p.eve.attachEvent("pouch_data_loaded", resolve);
               });
             }
             else{
@@ -2566,7 +2600,7 @@ function Pouch(){
         }
         return $p.md.load_doc_ram().then(function () {
           setTimeout(function () {
-            $p.eve.callEvent(page.note = "pouch_load_data_loaded", [page]);
+            $p.eve.callEvent(page.note = "pouch_data_loaded", [page]);
           }, 1000);
         });
       }
@@ -2852,15 +2886,16 @@ function Pouch(){
 		save_obj: {
 			value: function (tObj, attr) {
 
-				var tmp = tObj._obj._clone(),
+				var tmp = tObj._obj._clone(void 0, true),
 					db = attr.db || tObj._manager.pouch_db;
 
         tmp.class_name = tObj.class_name;
 				tmp._id = tmp.class_name + "|" + tObj.ref;
 				delete tmp.ref;
 
-				if(attr.attachments)
-					tmp._attachments = attr.attachments;
+				if(attr.attachments){
+          tmp._attachments = attr.attachments;
+        }
 
 				return (tObj.is_new() ? Promise.resolve() : db.get(tmp._id))
 					.then(function (res) {
@@ -2922,8 +2957,8 @@ function Pouch(){
 						docs = changes.change.docs;
 					}else
 						docs = changes.docs;
-
-				}else
+				}
+				else
 					docs = changes.rows;
 
 				if (docs.length > 0) {
@@ -3750,17 +3785,21 @@ function Meta() {
    * ### Загружает объекты с типом кеширования doc_ram в ОЗУ
    * @method load_doc_ram
    */
-  _md.load_doc_ram = function(){
+  _md.load_doc_ram = function() {
     var res = [];
-    ['cat','cch'].forEach(function (kind) {
-      for(var name in _m[kind]){
-        if(_m[kind][name].cachable == 'doc_ram'){
-          res.push($p[kind][name].pouch_find_rows({_top: 1000, _skip: 0}));
+    ['cat','cch','ireg'].forEach(function (kind) {
+      for (var name in _m[kind]) {
+        if (_m[kind][name].cachable == 'doc_ram') {
+          res.push(kind + '.' + name);
         }
       }
     });
-    return Promise.all(res);
-  };
+    return $p.wsql.pouch.local.doc.find({
+      selector: {class_name: {$in: res}},
+      limit: 10000
+    })
+      .then($p.wsql.pouch.load_changes);
+  }
 
 	/**
 	 * ### Инициализирует метаданные
@@ -6114,7 +6153,7 @@ DataProcessorsManager.prototype.__define({
 	},
 
 	/**
-	 * fake-метод, не имеет смысла для обработок, т.к. они не кешируются в alasql. Добавлен, чтобы не ругалась форма обхекта при закрытии
+	 * fake-метод, не имеет смысла для обработок, т.к. они не кешируются в alasql. Добавлен, чтобы не ругалась форма объекта при закрытии
 	 * @method unload_obj
 	 * @param ref
 	 */
@@ -6394,28 +6433,24 @@ function RegisterManager(class_name){
 	 * @async
 	 */
 	this.load_array = function(aattr, forse){
-
 		var ref, obj, res = [];
 
 		for(var i=0; i<aattr.length; i++){
-
 			ref = this.get_ref(aattr[i]);
 			obj = this.by_ref[ref];
 
 			if(!obj && !aattr[i]._deleted){
 				obj = new $p[this.obj_constructor()](aattr[i], this);
-				if(forse)
-					obj._set_loaded();
-
-			}else if(obj && aattr[i]._deleted){
-				obj.unload();
+				forse && obj._set_loaded();
+			}
+			else if(aattr[i]._deleted){
+        obj && obj.unload();
 				continue;
-
-			}else if(obj.is_new() || forse){
+			}
+			else if(obj.is_new() || forse){
 				obj._mixin(aattr[i]);
 				obj._set_loaded();
 			}
-
 			res.push(obj);
 		}
 		return res;
@@ -7927,15 +7962,12 @@ TabularSectionRow.prototype._setter = function (f, v) {
 function DataObj(attr, manager) {
 
 	var tmp,
-		_ts_ = {},
-		_obj = {},
-		_data = {
-			_is_new: !(this instanceof EnumObj)
-		};
+		_ts_ = {};
 
 	// если объект с такой ссылкой уже есть в базе, возвращаем его и не создаём нового
-	if(!(manager instanceof DataProcessorsManager) && !(manager instanceof EnumManager))
-		tmp = manager.get(attr, false, true);
+	if(!(manager instanceof DataProcessorsManager) && !(manager instanceof EnumManager)){
+    tmp = manager.get(attr, false, true);
+  }
 
 	if(tmp){
 		attr = null;
@@ -7943,29 +7975,7 @@ function DataObj(attr, manager) {
 	}
 
 
-	if(manager instanceof EnumManager)
-		_obj.ref = attr.name;
-
-	else if(!(manager instanceof RegisterManager)){
-		_obj.ref = $p.utils.fix_guid(attr);
-
-	}else
-		_obj.ref = manager.get_ref(attr);
-
-
 	this.__define({
-
-		/**
-		 * ### Фактическое хранилище данных объекта
-		 * Оно же, запись в таблице объекта локальной базы данных
-		 * @property _obj
-		 * @type Object
-		 * @final
-		 */
-		_obj: {
-			value: _obj,
-			configurable: true
-		},
 
 		/**
 		 * Хранилище ссылок на табличные части - не сохраняется в базе данных
@@ -7991,23 +8001,37 @@ function DataObj(attr, manager) {
 			value : manager
 		},
 
-		/**
-		 * Пользовательские данные - аналог `AdditionalProperties` _Дополнительные cвойства_ в 1С
-		 * @property _data
-		 * @type DataManager
-		 * @final
-		 */
-		_data: {
-			value : _data,
-			configurable: true
-		}
+    /**
+     * Пользовательские данные - аналог `AdditionalProperties` _Дополнительные cвойства_ в 1С
+     * @property _data
+     * @type DataManager
+     * @final
+     */
+    _data: {
+		  value: {
+        _is_new: !(this instanceof EnumObj)
+      }
+    },
+
+    /**
+     * ### Фактическое хранилище данных объекта
+     * Оно же, запись в таблице объекта локальной базы данных
+     * @property _obj
+     * @type Object
+     * @final
+     */
+    _obj: {
+		  value: {
+        ref: manager instanceof EnumManager ? attr.name : (manager instanceof RegisterManager ? manager.get_ref(attr) : $p.utils.fix_guid(attr))
+      }
+    }
 
 	});
 
 
 	if(manager.alatable && manager.push){
-		manager.alatable.push(_obj);
-		manager.push(this, _obj.ref);
+		manager.alatable.push(this._obj);
+		manager.push(this, this._obj.ref);
 	}
 
 	attr = null;
@@ -8600,7 +8624,8 @@ function CatObj(attr, manager) {
 	// выполняем конструктор родительского объекта
 	CatObj.superclass.constructor.call(this, attr, manager);
 
-	if(attr && typeof attr == "object"){
+	if(this._data && attr && typeof attr == "object"){
+	  this._data._silent = true;
 		if(attr._not_set_loaded){
 			delete attr._not_set_loaded;
 			this._mixin(attr);
@@ -8610,6 +8635,7 @@ function CatObj(attr, manager) {
 			if(!$p.utils.is_empty_guid(this.ref) && (attr.id || attr.name))
 				this._set_loaded(this.ref);
 		}
+    this._data._silent = false;
 	}
 
 }
@@ -8674,12 +8700,12 @@ CatObj.prototype.__define({
    * @param group {Object|Array} - папка или массив папок
    *
    */
-  in_hierarchy: {
+  _hierarchy: {
     value: function (group) {
       var t = this;
       if(Array.isArray(group)){
         return group.some(function (v) {
-          return t.in_hierarchy(v);
+          return t._hierarchy(v);
         });
       }
       if(this == group || t.parent == group){
@@ -8687,9 +8713,25 @@ CatObj.prototype.__define({
       }
       var parent = t.parent;
       if(parent && !parent.empty()){
-        return parent.in_hierarchy(group);
+        return parent._hierarchy(group);
       }
       return group == $p.utils.blank.guid;
+    }
+  },
+
+  /**
+   * ### Дети
+   * Возвращает массив элементов, находящихся в иерархии текущего
+   */
+  _children: {
+    get: function () {
+      var  t = this, res = [];
+      this._manager.forEach(function (o) {
+        if(o != t && o._hierarchy(t)){
+          res.push(o);
+        }
+      });
+      return res;
     }
   }
 
@@ -8733,8 +8775,11 @@ function DocObj(attr, manager) {
 		}
 	});
 
-	if(attr && typeof attr == "object")
-		this._mixin(attr);
+	if(attr && typeof attr == "object"){
+    this._data._silent = true;
+    this._mixin(attr);
+    this._data._silent = false;
+  }
 
 	if(!$p.utils.is_empty_guid(this.ref) && attr.number_doc)
 		this._set_loaded(this.ref);
@@ -9937,7 +9982,7 @@ DataManager.prototype.__define({
 					limit : 1000,
 					include_docs: true,
 					startkey: t.class_name + "|",
-					endkey: t.class_name + '|\uffff'
+					endkey: t.class_name + '|\ufff0'
 				};
 
 			return new Promise(function(resolve, reject){
@@ -10018,7 +10063,7 @@ DataManager.prototype.__define({
 					limit : 100,
 					include_docs: true,
 					startkey: t.class_name + "|",
-					endkey: t.class_name + '|\uffff'
+					endkey: t.class_name + '|\ufff0'
 				};
 
 			if(selection){
@@ -10047,12 +10092,12 @@ DataManager.prototype.__define({
 				if(selection._key) {
 
 					if(selection._key._order_by == "des"){
-						options.startkey = selection._key.endkey || selection._key + '\uffff';
+						options.startkey = selection._key.endkey || selection._key + '\ufff0';
 						options.endkey = selection._key.startkey || selection._key;
 						options.descending = true;
 					}else{
 						options.startkey = selection._key.startkey || selection._key;
-						options.endkey = selection._key.endkey || selection._key + '\uffff';
+						options.endkey = selection._key.endkey || selection._key + '\ufff0';
 					}
 				}
 
@@ -10558,9 +10603,9 @@ DataObj.prototype.__define({
 				return;
 
 			// если не указан явно, рассчитываем префикс по умолчанию
-			if(!prefix)
-				prefix = (($p.current_acl && $p.current_acl.prefix) || "") +
-					(this.organization && this.organization.prefix ? this.organization.prefix : ($p.wsql.get_user_param("zone") + "-"));
+			if(!prefix){
+        prefix = (($p.current_user && $p.current_user.prefix) || "") + ((this.organization && this.organization.prefix) || "");
+      }
 
 			var obj = this,
 				part = "",
@@ -10575,7 +10620,7 @@ DataObj.prototype.__define({
 				{
 					limit : 1,
 					include_docs: false,
-					startkey: [obj.class_name, year, prefix + '\uffff'],
+					startkey: [obj.class_name, year, prefix + '\ufff0'],
 					endkey: [obj.class_name, year, prefix],
 					descending: true
 				})
@@ -10610,7 +10655,7 @@ DataObj.prototype.__define({
 		value: function (prefix) {
 
 			if(!prefix)
-				prefix = (($p.current_acl && $p.current_acl.prefix) || "") +
+				prefix = (($p.current_user && $p.current_user.prefix) || "") +
 					(this.organization && this.organization.prefix ? this.organization.prefix : ($p.wsql.get_user_param("zone") + "-"));
 
 			var code_length = this._metadata.code_length - prefix.length,

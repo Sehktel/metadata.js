@@ -59,13 +59,25 @@ function OCombo(attr){
 		t.getBase().style.left = left + "px";
 
 	this.attachEvent("onChange", function(){
-		if(_obj && _field)
-			_obj[_field] = this.getSelectedValue();
+		if(_obj && _field){
+		  var val = this.getSelectedValue();
+		  if(!val && this.getComboText()){
+        val = this.getOptionByLabel(this.getComboText());
+        if(val){
+          val = val.value;
+        }
+        else{
+          this.setComboText("");
+        }
+      }
+      _obj[_field] = val;
+    }
 	});
 
 	this.attachEvent("onBlur", function(){
-		if(!this.getSelectedValue() && this.getComboText())
-			this.setComboText("");
+		if(!this.getSelectedValue() && this.getComboText()){
+      this.setComboText("");
+    }
 	});
 
 	this.attachEvent("onDynXLS", function (text) {
@@ -173,12 +185,12 @@ function OCombo(attr){
 						o._set_loaded(o.ref);
 						o.form_obj(attr.pwnd);
 					});
-
-		} else if(this.name == "open"){
+		}
+		else if(this.name == "open"){
 			if(_obj && _obj[_field] && !_obj[_field].empty())
 				_obj[_field].form_obj(attr.pwnd);
-
-		} else if(this.name == "type"){
+		}
+		else if(_meta && this.name == "type"){
 			var tlist = [], tmgr, tmeta, tobj = _obj, tfield = _field;
 			_meta.type.types.forEach(function (o) {
 				tmgr = _md.mgr_by_class_name(o);
@@ -247,7 +259,7 @@ function OCombo(attr){
 		// для полных прав разрешаем добавление элементов
 		// TODO: учесть реальные права на добавление
 		if(!attr.hide_frm){
-			var _acl = $p.current_acl.get_acl(_mgr.class_name);
+			var _acl = $p.current_user.get_acl(_mgr.class_name);
 			if(_acl.indexOf("i") != -1)
 				innerHTML += "&nbsp;<a href='#' name='add' title='Создать новый элемент {F8}'><i class='fa fa-plus fa-fwfa-fw'></i></a>";
 		}
