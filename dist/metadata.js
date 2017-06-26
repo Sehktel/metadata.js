@@ -1,6 +1,6 @@
 /*!
- metadata.js v0.12.226, built:2017-05-10 &copy; Evgeniy Malyarov http://www.oknosoft.ru 2014-2016
- metadata.js may be freely distributed under the AGPL-3.0. To obtain _Oknosoft Commercial license_, contact info@oknosoft.ru
+ metadata.js v0.12.231, built:2017-06-22 &copy; Evgeniy Malyarov http://www.oknosoft.ru 2014-2017
+ metadata.js may be freely distributed under the MIT. To obtain _Oknosoft Commercial license_, contact info@oknosoft.ru
  */
 (function(root, factory) {
   if (typeof define === 'function' && define.amd) {
@@ -12,179 +12,8 @@
   }
 }(this, function() {
 
-;(function (global, factory) {
-   typeof exports === 'object' && typeof module !== 'undefined'
-       && typeof require === 'function' ? factory(require('../moment')) :
-   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
-   factory(global.moment)
-}(this, (function (moment) { 'use strict';
 
-
-function plural(word, num) {
-    var forms = word.split('_');
-    return num % 10 === 1 && num % 100 !== 11 ? forms[0] : (num % 10 >= 2 && num % 10 <= 4 && (num % 100 < 10 || num % 100 >= 20) ? forms[1] : forms[2]);
-}
-function relativeTimeWithPlural(number, withoutSuffix, key) {
-    var format = {
-        'mm': withoutSuffix ? 'минута_минуты_минут' : 'минуту_минуты_минут',
-        'hh': 'час_часа_часов',
-        'dd': 'день_дня_дней',
-        'MM': 'месяц_месяца_месяцев',
-        'yy': 'год_года_лет'
-    };
-    if (key === 'm') {
-        return withoutSuffix ? 'минута' : 'минуту';
-    }
-    else {
-        return number + ' ' + plural(format[key], +number);
-    }
-}
-var monthsParse = [/^янв/i, /^фев/i, /^мар/i, /^апр/i, /^ма[йя]/i, /^июн/i, /^июл/i, /^авг/i, /^сен/i, /^окт/i, /^ноя/i, /^дек/i];
-
-var ru = moment.defineLocale('ru', {
-    months : {
-        format: 'января_февраля_марта_апреля_мая_июня_июля_августа_сентября_октября_ноября_декабря'.split('_'),
-        standalone: 'январь_февраль_март_апрель_май_июнь_июль_август_сентябрь_октябрь_ноябрь_декабрь'.split('_')
-    },
-    monthsShort : {
-        format: 'янв._февр._мар._апр._мая_июня_июля_авг._сент._окт._нояб._дек.'.split('_'),
-        standalone: 'янв._февр._март_апр._май_июнь_июль_авг._сент._окт._нояб._дек.'.split('_')
-    },
-    weekdays : {
-        standalone: 'воскресенье_понедельник_вторник_среда_четверг_пятница_суббота'.split('_'),
-        format: 'воскресенье_понедельник_вторник_среду_четверг_пятницу_субботу'.split('_'),
-        isFormat: /\[ ?[Вв] ?(?:прошлую|следующую|эту)? ?\] ?dddd/
-    },
-    weekdaysShort : 'вс_пн_вт_ср_чт_пт_сб'.split('_'),
-    weekdaysMin : 'вс_пн_вт_ср_чт_пт_сб'.split('_'),
-    monthsParse : monthsParse,
-    longMonthsParse : monthsParse,
-    shortMonthsParse : monthsParse,
-
-    monthsRegex: /^(январ[ья]|янв\.?|феврал[ья]|февр?\.?|марта?|мар\.?|апрел[ья]|апр\.?|ма[йя]|июн[ья]|июн\.?|июл[ья]|июл\.?|августа?|авг\.?|сентябр[ья]|сент?\.?|октябр[ья]|окт\.?|ноябр[ья]|нояб?\.?|декабр[ья]|дек\.?)/i,
-
-    monthsShortRegex: /^(январ[ья]|янв\.?|феврал[ья]|февр?\.?|марта?|мар\.?|апрел[ья]|апр\.?|ма[йя]|июн[ья]|июн\.?|июл[ья]|июл\.?|августа?|авг\.?|сентябр[ья]|сент?\.?|октябр[ья]|окт\.?|ноябр[ья]|нояб?\.?|декабр[ья]|дек\.?)/i,
-
-    monthsStrictRegex: /^(январ[яь]|феврал[яь]|марта?|апрел[яь]|ма[яй]|июн[яь]|июл[яь]|августа?|сентябр[яь]|октябр[яь]|ноябр[яь]|декабр[яь])/i,
-
-    monthsShortStrictRegex: /^(янв\.|февр?\.|мар[т.]|апр\.|ма[яй]|июн[ья.]|июл[ья.]|авг\.|сент?\.|окт\.|нояб?\.|дек\.)/i,
-    longDateFormat : {
-        LT : 'HH:mm',
-        LTS : 'HH:mm:ss',
-        L : 'DD.MM.YYYY',
-        LL : 'D MMMM YYYY г.',
-        LLL : 'D MMMM YYYY г., HH:mm',
-        LLLL : 'dddd, D MMMM YYYY г., HH:mm'
-    },
-    calendar : {
-        sameDay: '[Сегодня в] LT',
-        nextDay: '[Завтра в] LT',
-        lastDay: '[Вчера в] LT',
-        nextWeek: function (now) {
-            if (now.week() !== this.week()) {
-                switch (this.day()) {
-                    case 0:
-                        return '[В следующее] dddd [в] LT';
-                    case 1:
-                    case 2:
-                    case 4:
-                        return '[В следующий] dddd [в] LT';
-                    case 3:
-                    case 5:
-                    case 6:
-                        return '[В следующую] dddd [в] LT';
-                }
-            } else {
-                if (this.day() === 2) {
-                    return '[Во] dddd [в] LT';
-                } else {
-                    return '[В] dddd [в] LT';
-                }
-            }
-        },
-        lastWeek: function (now) {
-            if (now.week() !== this.week()) {
-                switch (this.day()) {
-                    case 0:
-                        return '[В прошлое] dddd [в] LT';
-                    case 1:
-                    case 2:
-                    case 4:
-                        return '[В прошлый] dddd [в] LT';
-                    case 3:
-                    case 5:
-                    case 6:
-                        return '[В прошлую] dddd [в] LT';
-                }
-            } else {
-                if (this.day() === 2) {
-                    return '[Во] dddd [в] LT';
-                } else {
-                    return '[В] dddd [в] LT';
-                }
-            }
-        },
-        sameElse: 'L'
-    },
-    relativeTime : {
-        future : 'через %s',
-        past : '%s назад',
-        s : 'несколько секунд',
-        m : relativeTimeWithPlural,
-        mm : relativeTimeWithPlural,
-        h : 'час',
-        hh : relativeTimeWithPlural,
-        d : 'день',
-        dd : relativeTimeWithPlural,
-        M : 'месяц',
-        MM : relativeTimeWithPlural,
-        y : 'год',
-        yy : relativeTimeWithPlural
-    },
-    meridiemParse: /ночи|утра|дня|вечера/i,
-    isPM : function (input) {
-        return /^(дня|вечера)$/.test(input);
-    },
-    meridiem : function (hour, minute, isLower) {
-        if (hour < 4) {
-            return 'ночи';
-        } else if (hour < 12) {
-            return 'утра';
-        } else if (hour < 17) {
-            return 'дня';
-        } else {
-            return 'вечера';
-        }
-    },
-    dayOfMonthOrdinalParse: /\d{1,2}-(й|го|я)/,
-    ordinal: function (number, period) {
-        switch (period) {
-            case 'M':
-            case 'd':
-            case 'DDD':
-                return number + '-й';
-            case 'D':
-                return number + '-го';
-            case 'w':
-            case 'W':
-                return number + '-я';
-            default:
-                return number;
-        }
-    },
-    week : {
-        dow : 1, 
-        doy : 7  
-    }
-});
-
-return ru;
-
-})));
-
-
-
-"use strict";
+;"use strict";
 
 
 
@@ -239,7 +68,7 @@ Object.defineProperties(Object.prototype, {
 	},
 
 	_clone: {
-		value: function(exclude) {
+		value: function(exclude, str_date) {
 			if(!this || "object" !== typeof this)
 				return this;
 			var p, v, c = "function" === typeof this.pop ? [] : {};
@@ -250,22 +79,34 @@ Object.defineProperties(Object.prototype, {
 				if (this.hasOwnProperty(p)){
 					v = this[p];
 					if(v){
-						if("function" === typeof v || v instanceof DataObj || v instanceof DataManager || v instanceof Date)
-							c[p] = v;
-
-						else if("object" === typeof v)
-							c[p] = v._clone(exclude);
-
-						else
-							c[p] = v;
-					} else
-						c[p] = v;
+						if("function" === typeof v || v instanceof DataObj || v instanceof DataManager){
+              c[p] = v;
+            }
+						else if("object" === typeof v){
+              if(v instanceof Date){
+                c[p] = str_date ? v.toJSON() : v;
+              }
+              else{
+                c[p] = v._clone(exclude, str_date);
+              }
+            }
+						else{
+              c[p] = v;
+            }
+					}
+					else{
+            c[p] = v;
+          }
 				}
 			}
 			return c;
 		}
 	}
 });
+
+Date.prototype.toJSON = function () {
+  return $p.moment(this).format($p.moment._masks.iso);
+}
 
 if(!Number.prototype.round)
 	Number.prototype.round = function(places) {
@@ -371,7 +212,7 @@ function MetaEngine() {
 	this.__define({
 
 		version: {
-			value: "0.12.226",
+			value: "0.12.231",
 			writable: false
 		},
 
@@ -491,7 +332,7 @@ function MetaEngine() {
 								ok = sel.some(function (element) {
 									var key = Object.keys(element)[0];
 									if(element[key].hasOwnProperty("like"))
-										return o[key] && o[key].toLowerCase().indexOf(element[key].like.toLowerCase())!=-1;
+										return typeof o[key] == "string" && o[key].toLowerCase().indexOf(element[key].like.toLowerCase())!=-1;
 									else
 										return $p.utils.is_equal(o[key], element[key]);
 								});
@@ -597,14 +438,20 @@ function MetaEngine() {
 
 		off: {
 			value: function (id) {
+			  if(arguments.length == 2){
+          id = arguments[1];
+        }
 				if(typeof id == "function" && id._evnts){
 					id._evnts.forEach(function (id) {
 						$p.eve.detachEvent(id);
 					});
-				}else if(!id)
-					$p.eve.detachAllEvents();
-				else
-					$p.eve.detachEvent(id);
+				}
+				else if(!id){
+          $p.eve.detachAllEvents();
+        }
+				else{
+          $p.eve.detachEvent(id);
+        }
 			}
 		},
 
@@ -679,7 +526,7 @@ function MetaEngine() {
 			value: 	new (
 
 					function ChartsOfAccounts(){
-					this.toString = function(){return $p.msg.meta_charts_of_accounts_mgr};
+					this.toString = function(){return $p.msg.meta_cacc_mgr};
 				})
 		},
 
@@ -687,7 +534,7 @@ function MetaEngine() {
 			value: new (
 
 					function ChartsOfCharacteristics(){
-					this.toString = function(){return $p.msg.meta_charts_of_characteristic_mgr};
+					this.toString = function(){return $p.msg.meta_cch_mgr};
 				})
 		},
 
@@ -977,10 +824,16 @@ function Utils() {
 			reader.onerror = function(err){
 				reject(err);
 			};
-			if(type == "data_url")
-				reader.readAsDataURL(blob);
-			else
-				reader.readAsText(blob);
+			switch (type) {
+        case "array" :
+          reader.readAsArrayBuffer(blob);
+          break;
+        case "data_url":
+          reader.readAsDataURL(blob);
+          break;
+        default:
+          reader.readAsText(blob);
+      }
 		});
 
 	};
@@ -1154,19 +1007,23 @@ function Ajax() {
 			return wnd_print;
 		}
 
-		if(!method || (typeof method == "string" && method.toLowerCase().indexOf("post")!=-1))
-			return this.post_ex(url,
-				typeof post_data == "object" ? JSON.stringify(post_data) : post_data,
-				true,
-				function(xhr){
-					xhr.responseType = "blob";
-				})
-				.then(show_blob);
-		else
-			return this.get_ex(url, true, function(xhr){
-					xhr.responseType = "blob";
-				})
-				.then(show_blob);
+    if(url instanceof Blob){
+      Promise.resolve(show_blob({response: url}));
+    }
+    else if(!method || (typeof method == "string" && method.toLowerCase().indexOf("post")!=-1))
+      return this.post_ex(url,
+        typeof post_data == "object" ? JSON.stringify(post_data) : post_data,
+        true,
+        function(xhr){
+          xhr.responseType = "blob";
+        })
+        .then(show_blob);
+    else{
+      return this.get_ex(url, true, function(xhr){
+        xhr.responseType = "blob";
+      })
+        .then(show_blob);
+    }
 	};
 
 	this.get_and_save_blob = function(url, post_data, file_name){
@@ -1338,6 +1195,7 @@ function WSQL(){
 					{p: "browser_uid",		v: $p.utils.generate_guid(), t:"string"},
 					{p: "zone",           v: $p.job_prm.hasOwnProperty("zone") ? $p.job_prm.zone : 1, t: $p.job_prm.zone_is_string ? "string" : "number"},
 					{p: "enable_save_pwd",v: $p.job_prm.enable_save_pwd,	t:"boolean"},
+          {p: "couch_direct",   v: $p.job_prm.hasOwnProperty("couch_direct") ? $p.job_prm.couch_direct : true,	t:"boolean"},
 					{p: "couch_path",		  v: $p.job_prm.couch_path,	t:"string"},
           {p: "rest_path",		  v: "", t:"string"},
 					{p: "skin",		        v: "dhx_web", t:"string"},
@@ -1678,7 +1536,7 @@ function InterfaceObjs(){
 
 	function All_meta_objs(cont, classes, frm_attr) {
 
-		this.layout = cont.attachLayout({
+		var layout = this.layout = cont.attachLayout({
 			pattern: "2U",
 			cells: [{
 				id: "a",
@@ -1693,16 +1551,16 @@ function InterfaceObjs(){
 			offsets: { top: 0, right: 0, bottom: 0, left: 0}
 		});
 
-		this.tree = this.layout.cells("a").attachTreeView();
-		this.tree.attachEvent("onSelect", function (name, mode) {
+		var tree = this.tree = layout.cells("a").attachTreeView();
+    tree.attachEvent("onSelect", function (name, mode) {
 			if(!mode)
 				return;
 			var mgr = $p.md.mgr_by_class_name(name);
 			if(mgr instanceof DataProcessorsManager){
-				mgr.form_rep(this.layout.cells("b"), frm_attr || {hide_header: true});
+				mgr.form_rep(layout.cells("b"), frm_attr || {hide_header: true});
 
 			}else if(mgr){
-				mgr.form_list(this.layout.cells("b"), frm_attr || {hide_header: true});
+				mgr.form_list(layout.cells("b"), frm_attr || {hide_header: true});
 			}
 
 		}.bind(this));
@@ -1722,24 +1580,24 @@ function InterfaceObjs(){
 				var key = classes[0]+"."+name,
 					meta = $p.md.get(key);
 				if(!meta.hide){
-					this.tree.addItem(key, meta.list_presentation || meta.synonym);
-					this.tree.setItemIcons(key, {file: "icon_1c_"+classes[0]});
+          tree.addItem(key, meta.list_presentation || meta.synonym);
+          tree.setItemIcons(key, {file: "icon_1c_"+classes[0]});
 				}
 			}.bind(this));
 
 		}else{
 			classes.forEach(function (id) {
-				this.tree.addItem(id, $p.msg["meta_"+id]);
-				this.tree.setItemIcons(id, {file: "icon_1c_"+id, folder_opened: "icon_1c_"+id, folder_closed: "icon_1c_"+id});
+        tree.addItem(id, $p.msg["meta_"+id]);
+        tree.setItemIcons(id, {file: "icon_1c_"+id, folder_opened: "icon_1c_"+id, folder_closed: "icon_1c_"+id});
 				$p.md.get_classes()[id].forEach(function (name) {
 					var key = id+"."+name,
 						meta = $p.md.get(key);
 					if(!meta.hide){
-						this.tree.addItem(key, meta.list_presentation || meta.synonym, id);
-						this.tree.setItemIcons(key, {file: "icon_1c_"+id});
+            tree.addItem(key, meta.list_presentation || meta.synonym, id);
+            tree.setItemIcons(key, {file: "icon_1c_"+id});
 					}
-				}.bind(this));
-			}.bind(this));
+				});
+			});
 		}
 	}
 
@@ -1878,15 +1736,15 @@ function InterfaceObjs(){
 
 	this.Setting2col = Setting2col;
 
-	this.do_reload = function () {
+	this.do_reload = function (text, title) {
 
 		var confirm_count = 0;
 
 		function do_reload(){
 
 			dhtmlx.confirm({
-				title: $p.msg.file_new_date_title,
-				text: $p.msg.file_new_date,
+				title: title || $p.msg.file_new_date_title,
+				text: text || $p.msg.file_new_date,
 				ok: "Перезагрузка",
 				cancel: "Продолжить",
 				callback: function(btn) {
@@ -1917,7 +1775,7 @@ function InterfaceObjs(){
   this.check_exit = function (wnd){
     var do_exit;
     this.w.forEachWindow(function (w) {
-      if(w != wnd && (w.isModal() || this.w.getTopmostWindow() == w))
+      if(w != wnd && (w.isModal() || $p.iface.w.getTopmostWindow() == w))
         do_exit = true;
     });
     return do_exit;
@@ -1934,73 +1792,38 @@ $p.__define({
 
 	current_user: {
 		get: function () {
-			return $p.cat && $p.cat.users ?
-				$p.cat.users.by_id($p.wsql.get_user_param("user_name")) :
-				$p.utils.blank.guid;
-		}
-	},
 
-	current_acl: {
-		get: function () {
+      if($p.CatUsers && !$p.CatUsers.prototype.hasOwnProperty("role_available")){
 
-			var res, proto;
-
-			if($p.cat && $p.cat.users_acl){
-
-				$p.cat.users_acl.find_rows({owner: $p.current_user}, function (o) {
-					res = o;
-					return false;
-				});
-
-				proto = $p.CatUsers_acl.prototype;
-			}
-
-			if(!proto){
-				proto = {};
-			}
-
-			if(!res) {
-				if(this.utils.blank.users_acl){
-					res = this.utils.blank.users_acl;
-				}else{
-					res = this.utils.blank.users_acl = Object.create(proto);
-					res.__define({
-						acl_objs: {
-							value: {
-								_obj: [],
-								each: function () {},
-								find_rows: function () {}
-							}
-						}
-					});
-				}
-			}
+        $p.CatUsers.prototype.__define({
 
 
-			if(!proto.hasOwnProperty("role_available")){
-				proto.__define({
+          role_available: {
+            value: function (name) {
+              return true;
+            }
+          },
 
-					role_available: {
-						value: function (name) {
-							return this.acl_objs._obj.some(function (row) {
-								return row.type == name;
-							});
-						}
-					},
+          get_acl: {
+            value: function(class_name) {
+              return "rvuidepo";
+            }
+          },
 
-					get_acl: {
-						value: function(class_name) {
-							var acn = class_name.split(".");
-							return this._acl && this._acl[acn[0]] && this._acl[acn[0]][acn[1]] ? this._acl[acn[0]][acn[1]] : "e";
-						}
-					}
+        });
+      }
 
-				});
-			}
+      if(!$p.cat || !$p.cat.users){
+        return $p.utils.blank.guid;
+      }
+      var res = $p.cat.users.by_id($p.wsql.get_user_param("user_name"));
+
 
 			return res;
 		}
 	},
+
+
 
 	load_script: {
 		value: function (src, type, callback) {
@@ -2032,6 +1855,33 @@ $p.__define({
 	}
 
 });
+
+$p.utils.__define({
+
+  docxtemplater: {
+    value: function (blob) {
+      return (window.Docxtemplater ?
+        Promise.resolve() :
+        Promise.all([
+          $p.load_script("https://cdn.jsdelivr.net/jszip/2/jszip.min.js", "script"),
+          $p.load_script("https://cdn.jsdelivr.net/combine/gh/open-xml-templating/docxtemplater-build/build/docxtemplater-latest.min.js,gh/open-xml-templating/docxtemplater-image-module-build/build/docxtemplater-image-module-latest.min.js", "script"),
+        ]))
+        .then(function () {
+          if(!Docxtemplater.prototype.saveAs){
+            Docxtemplater.prototype.saveAs = function (name) {
+              var out = this.getZip().generate({type: "blob", mimeType: $p.utils.mime_lookup('docx')});
+              $p.wsql.alasql.utils.saveAs(out, name);
+            };
+          }
+          return $p.utils.blob_as_text(blob, 'array');
+        })
+        .then(function (buffer) {
+          return new Docxtemplater().loadZip(new JSZip(buffer));
+        });
+    }
+  }
+
+})
 
 function Pouch(){
 
@@ -2158,7 +2008,7 @@ function Pouch(){
           .then(function () {
             if(t.local._loading){
               return new Promise(function (resolve, reject) {
-                $p.eve.attachEvent("pouch_load_data_loaded", resolve);
+                $p.eve.attachEvent("pouch_data_loaded", resolve);
               });
             }
             else{
@@ -2252,7 +2102,7 @@ function Pouch(){
         }
         return $p.md.load_doc_ram().then(function () {
           setTimeout(function () {
-            $p.eve.callEvent(page.note = "pouch_load_data_loaded", [page]);
+            $p.eve.callEvent(page.note = "pouch_data_loaded", [page]);
           }, 1000);
         });
       }
@@ -2478,15 +2328,16 @@ function Pouch(){
 		save_obj: {
 			value: function (tObj, attr) {
 
-				var tmp = tObj._obj._clone(),
+				var tmp = tObj._obj._clone(void 0, true),
 					db = attr.db || tObj._manager.pouch_db;
 
         tmp.class_name = tObj.class_name;
 				tmp._id = tmp.class_name + "|" + tObj.ref;
 				delete tmp.ref;
 
-				if(attr.attachments)
-					tmp._attachments = attr.attachments;
+				if(attr.attachments){
+          tmp._attachments = attr.attachments;
+        }
 
 				return (tObj.is_new() ? Promise.resolve() : db.get(tmp._id))
 					.then(function (res) {
@@ -2540,8 +2391,8 @@ function Pouch(){
 						docs = changes.change.docs;
 					}else
 						docs = changes.docs;
-
-				}else
+				}
+				else
 					docs = changes.rows;
 
 				if (docs.length > 0) {
@@ -2796,8 +2647,8 @@ if(typeof window !== "undefined" && window.dhx4){
 	msg.meta_task_mgr = "Менеджер задач";
 	msg.meta_bp_mgr = "Менеджер бизнес-процессов";
 	msg.meta_reports_mgr = "Менеджер отчетов";
-	msg.meta_charts_of_accounts_mgr = "Менеджер планов счетов";
-	msg.meta_charts_of_characteristic_mgr = "Менеджер планов видов характеристик";
+	msg.meta_cacc_mgr = "Менеджер планов счетов";
+	msg.meta_cch_mgr = "Менеджер планов видов характеристик";
 	msg.meta_extender = "Модификаторы объектов и менеджеров";
 
 	msg.modified_close = "Объект изменен<br/>Закрыть без сохранения?";
@@ -3551,17 +3402,21 @@ function Meta() {
     return Object.keys(res);
   }
 
-  _md.load_doc_ram = function(){
+  _md.load_doc_ram = function() {
     var res = [];
-    ['cat','cch'].forEach(function (kind) {
-      for(var name in _m[kind]){
-        if(_m[kind][name].cachable == 'doc_ram'){
-          res.push($p[kind][name].pouch_find_rows({_top: 1000, _skip: 0}));
+    ['cat','cch','ireg'].forEach(function (kind) {
+      for (var name in _m[kind]) {
+        if (_m[kind][name].cachable == 'doc_ram') {
+          res.push(kind + '.' + name);
         }
       }
     });
-    return Promise.all(res);
-  };
+    return $p.wsql.pouch.local.doc.find({
+      selector: {class_name: {$in: res}},
+      limit: 10000
+    })
+      .then($p.wsql.pouch.load_changes);
+  }
 
 	_md.init = function (meta_db) {
 
@@ -5595,28 +5450,24 @@ function RegisterManager(class_name){
 	};
 
 	this.load_array = function(aattr, forse){
-
 		var ref, obj, res = [];
 
 		for(var i=0; i<aattr.length; i++){
-
 			ref = this.get_ref(aattr[i]);
 			obj = this.by_ref[ref];
 
 			if(!obj && !aattr[i]._deleted){
 				obj = new $p[this.obj_constructor()](aattr[i], this);
-				if(forse)
-					obj._set_loaded();
-
-			}else if(obj && aattr[i]._deleted){
-				obj.unload();
+				forse && obj._set_loaded();
+			}
+			else if(aattr[i]._deleted){
+        obj && obj.unload();
 				continue;
-
-			}else if(obj.is_new() || forse){
+			}
+			else if(obj.is_new() || forse){
 				obj._mixin(aattr[i]);
 				obj._set_loaded();
 			}
-
 			res.push(obj);
 		}
 		return res;
@@ -6339,14 +6190,11 @@ SchemeSettingsManager._extend(CatManager);
 function DataObj(attr, manager) {
 
 	var tmp,
-		_ts_ = {},
-		_obj = {},
-		_data = {
-			_is_new: !(this instanceof EnumObj)
-		};
+		_ts_ = {};
 
-	if(!(manager instanceof DataProcessorsManager) && !(manager instanceof EnumManager))
-		tmp = manager.get(attr, false, true);
+	if(!(manager instanceof DataProcessorsManager) && !(manager instanceof EnumManager)){
+    tmp = manager.get(attr, false, true);
+  }
 
 	if(tmp){
 		attr = null;
@@ -6354,22 +6202,7 @@ function DataObj(attr, manager) {
 	}
 
 
-	if(manager instanceof EnumManager)
-		_obj.ref = attr.name;
-
-	else if(!(manager instanceof RegisterManager)){
-		_obj.ref = $p.utils.fix_guid(attr);
-
-	}else
-		_obj.ref = manager.get_ref(attr);
-
-
 	this.__define({
-
-		_obj: {
-			value: _obj,
-			configurable: true
-		},
 
 		_ts_: {
 			value: function( name ) {
@@ -6385,17 +6218,24 @@ function DataObj(attr, manager) {
 			value : manager
 		},
 
-		_data: {
-			value : _data,
-			configurable: true
-		}
+    _data: {
+		  value: {
+        _is_new: !(this instanceof EnumObj)
+      }
+    },
+
+    _obj: {
+		  value: {
+        ref: manager instanceof EnumManager ? attr.name : (manager instanceof RegisterManager ? manager.get_ref(attr) : $p.utils.fix_guid(attr))
+      }
+    }
 
 	});
 
 
 	if(manager.alatable && manager.push){
-		manager.alatable.push(_obj);
-		manager.push(this, _obj.ref);
+		manager.alatable.push(this._obj);
+		manager.push(this, this._obj.ref);
 	}
 
 	attr = null;
@@ -6837,7 +6677,8 @@ function CatObj(attr, manager) {
 
 	CatObj.superclass.constructor.call(this, attr, manager);
 
-	if(attr && typeof attr == "object"){
+	if(this._data && attr && typeof attr == "object"){
+	  this._data._silent = true;
 		if(attr._not_set_loaded){
 			delete attr._not_set_loaded;
 			this._mixin(attr);
@@ -6847,6 +6688,7 @@ function CatObj(attr, manager) {
 			if(!$p.utils.is_empty_guid(this.ref) && (attr.id || attr.name))
 				this._set_loaded(this.ref);
 		}
+    this._data._silent = false;
 	}
 
 }
@@ -6887,12 +6729,12 @@ CatObj.prototype.__define({
     }
   },
 
-  in_hierarchy: {
+  _hierarchy: {
     value: function (group) {
       var t = this;
       if(Array.isArray(group)){
         return group.some(function (v) {
-          return t.in_hierarchy(v);
+          return t._hierarchy(v);
         });
       }
       if(this == group || t.parent == group){
@@ -6900,9 +6742,21 @@ CatObj.prototype.__define({
       }
       var parent = t.parent;
       if(parent && !parent.empty()){
-        return parent.in_hierarchy(group);
+        return parent._hierarchy(group);
       }
       return group == $p.utils.blank.guid;
+    }
+  },
+
+  _children: {
+    get: function () {
+      var  t = this, res = [];
+      this._manager.forEach(function (o) {
+        if(o != t && o._hierarchy(t)){
+          res.push(o);
+        }
+      });
+      return res;
     }
   }
 
@@ -6931,8 +6785,11 @@ function DocObj(attr, manager) {
 		}
 	});
 
-	if(attr && typeof attr == "object")
-		this._mixin(attr);
+	if(attr && typeof attr == "object"){
+    this._data._silent = true;
+    this._mixin(attr);
+    this._data._silent = false;
+  }
 
 	if(!$p.utils.is_empty_guid(this.ref) && attr.number_doc)
 		this._set_loaded(this.ref);
@@ -8261,7 +8118,7 @@ DataManager.prototype.__define({
 					limit : 1000,
 					include_docs: true,
 					startkey: t.class_name + "|",
-					endkey: t.class_name + '|\uffff'
+					endkey: t.class_name + '|\ufff0'
 				};
 
 			return new Promise(function(resolve, reject){
@@ -8322,7 +8179,7 @@ DataManager.prototype.__define({
 					limit : 100,
 					include_docs: true,
 					startkey: t.class_name + "|",
-					endkey: t.class_name + '|\uffff'
+					endkey: t.class_name + '|\ufff0'
 				};
 
 			if(selection){
@@ -8351,12 +8208,12 @@ DataManager.prototype.__define({
 				if(selection._key) {
 
 					if(selection._key._order_by == "des"){
-						options.startkey = selection._key.endkey || selection._key + '\uffff';
+						options.startkey = selection._key.endkey || selection._key + '\ufff0';
 						options.endkey = selection._key.startkey || selection._key;
 						options.descending = true;
 					}else{
 						options.startkey = selection._key.startkey || selection._key;
-						options.endkey = selection._key.endkey || selection._key + '\uffff';
+						options.endkey = selection._key.endkey || selection._key + '\ufff0';
 					}
 				}
 
@@ -8793,9 +8650,9 @@ DataObj.prototype.__define({
 			if(!this._metadata.code_length)
 				return;
 
-			if(!prefix)
-				prefix = (($p.current_acl && $p.current_acl.prefix) || "") +
-					(this.organization && this.organization.prefix ? this.organization.prefix : ($p.wsql.get_user_param("zone") + "-"));
+			if(!prefix){
+        prefix = (($p.current_user && $p.current_user.prefix) || "") + ((this.organization && this.organization.prefix) || "");
+      }
 
 			var obj = this,
 				part = "",
@@ -8809,7 +8666,7 @@ DataObj.prototype.__define({
 				{
 					limit : 1,
 					include_docs: false,
-					startkey: [obj.class_name, year, prefix + '\uffff'],
+					startkey: [obj.class_name, year, prefix + '\ufff0'],
 					endkey: [obj.class_name, year, prefix],
 					descending: true
 				})
@@ -8844,7 +8701,7 @@ DataObj.prototype.__define({
 		value: function (prefix) {
 
 			if(!prefix)
-				prefix = (($p.current_acl && $p.current_acl.prefix) || "") +
+				prefix = (($p.current_user && $p.current_user.prefix) || "") +
 					(this.organization && this.organization.prefix ? this.organization.prefix : ($p.wsql.get_user_param("zone") + "-"));
 
 			var code_length = this._metadata.code_length - prefix.length,
@@ -8997,7 +8854,7 @@ $p.iface.OBtnAuthSync = function OBtnAuthSync() {
 			set_spin(true);
 		},
 
-		pouch_load_data_loaded: function (page) {
+		pouch_data_loaded: function (page) {
 			$p.eve.stepper.wnd_sync && $p.iface.sync.close();
 		},
 
@@ -9558,13 +9415,25 @@ function OCombo(attr){
 		t.getBase().style.left = left + "px";
 
 	this.attachEvent("onChange", function(){
-		if(_obj && _field)
-			_obj[_field] = this.getSelectedValue();
+		if(_obj && _field){
+		  var val = this.getSelectedValue();
+		  if(!val && this.getComboText()){
+        val = this.getOptionByLabel(this.getComboText());
+        if(val){
+          val = val.value;
+        }
+        else{
+          this.setComboText("");
+        }
+      }
+      _obj[_field] = val;
+    }
 	});
 
 	this.attachEvent("onBlur", function(){
-		if(!this.getSelectedValue() && this.getComboText())
-			this.setComboText("");
+		if(!this.getSelectedValue() && this.getComboText()){
+      this.setComboText("");
+    }
 	});
 
 	this.attachEvent("onDynXLS", function (text) {
@@ -9666,12 +9535,12 @@ function OCombo(attr){
 						o._set_loaded(o.ref);
 						o.form_obj(attr.pwnd);
 					});
-
-		} else if(this.name == "open"){
+		}
+		else if(this.name == "open"){
 			if(_obj && _obj[_field] && !_obj[_field].empty())
 				_obj[_field].form_obj(attr.pwnd);
-
-		} else if(this.name == "type"){
+		}
+		else if(_meta && this.name == "type"){
 			var tlist = [], tmgr, tmeta, tobj = _obj, tfield = _field;
 			_meta.type.types.forEach(function (o) {
 				tmgr = _md.mgr_by_class_name(o);
@@ -9738,7 +9607,7 @@ function OCombo(attr){
 				"<a href='#' name='open' style='margin-left: 9px;' title='Открыть форму элемента {Ctrl+Shift+F4}'><i class='fa fa-external-link fa-fw'></i></a>";
 
 		if(!attr.hide_frm){
-			var _acl = $p.current_acl.get_acl(_mgr.class_name);
+			var _acl = $p.current_user.get_acl(_mgr.class_name);
 			if(_acl.indexOf("i") != -1)
 				innerHTML += "&nbsp;<a href='#' name='add' title='Создать новый элемент {F8}'><i class='fa fa-plus fa-fwfa-fw'></i></a>";
 		}
@@ -10448,6 +10317,7 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
 				}
 			}
 
+      _ts._owner._silent(false);
 			var row = _ts.add(proto);
 
 			if(_mgr.handle_event(_obj, "add_row",
@@ -10465,7 +10335,6 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
 		}
 	};
 
-
   _grid._move_row = function(direction){
     if(attr.read_only){
       return;
@@ -10473,6 +10342,7 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
     var rId = get_sel_index();
 
     if(rId != undefined){
+      _ts._owner._silent(false);
       if(direction == "up"){
         if(rId != 0){
           _ts.swap(rId-1, rId);
@@ -10498,7 +10368,7 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
 			var rId = get_sel_index();
 
 			if(rId != undefined){
-
+        _ts._owner._silent(false);
 				if(_mgr.handle_event(_obj, "del_row",
 						{
 							tabular_section: _tsname,
@@ -10538,8 +10408,11 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
 		if(stage != 2 || nValue == oValue)
 			return true;
 
-		var cell_field = _grid.get_cell_field(),
-			ret_code = _mgr.handle_event(_obj, "value_change", {
+		var cell_field = _grid.get_cell_field();
+		if(!cell_field){
+      return true;
+    }
+		var	ret_code = _mgr.handle_event(_obj, "value_change", {
 				field: cell_field.field,
 				value: nValue,
 				tabular_section: _tsname,
@@ -11065,7 +10938,7 @@ $p.iface.Toolbar_filter.prototype.__define({
 
 			var res = {
 				date_from: this.input_date_from ? $p.utils.date_add_day(dhx4.str2date(this.input_date_from.value), 0, true) : "",
-				date_till: this.input_date_till ? $p.utils.date_add_day(dhx4.str2date(this.input_date_till.value), 1, true) : "",
+				date_till: this.input_date_till ? $p.utils.date_add_day(dhx4.str2date(this.input_date_till.value), 0, true) : "",
 				filter: this.input_filter ? this.input_filter.value : ""
 			}, fld, flt;
 
@@ -11317,20 +11190,19 @@ $p.iface.frm_auth = function (attr, resolve, reject) {
 				allow_minmax: true,
 				modal: true
 			};
-		_cell = $p.iface.dat_blank(attr._dxw, attr.options);
-		_cell.attachEvent("onClose",function(win){
+		_cell = this.auth = this.dat_blank(attr._dxw, attr.options);
+		_cell.attachEvent("onClose", function(win){
 			if(were_errors){
-				if(reject)
-					reject(err);
+				reject && reject(err);
 			}else if(resolve)
 				resolve();
 			return true;
 		});
-		_frm = _cell.attachForm();
+    _frm = _cell.attachForm();
 
 	}else{
-		_cell = attr.cell || $p.iface.docs;
-		_frm = $p.iface.auth = _cell.attachForm();
+		_cell = attr.cell || this.docs;
+		_frm = this.auth = _cell.attachForm();
 		$p.msg.show_msg($p.msg.init_login, _cell);
 	}
 
@@ -12006,7 +11878,7 @@ DataManager.prototype.form_obj = function(pwnd, attr){
 			this.addSpacer("btn_unpost");
 			this.attachEvent("onclick", attr.toolbar_click || toolbar_click);
 
-			var _acl = $p.current_acl.get_acl(_mgr.class_name);
+			var _acl = $p.current_user.get_acl(_mgr.class_name);
 
 			if(_mgr instanceof DocManager && _acl.indexOf("p") != -1){
 				this.enableItem("btn_post");
@@ -12098,7 +11970,7 @@ DataManager.prototype.form_obj = function(pwnd, attr){
 
 		else{
 
-			var _acl = $p.current_acl.get_acl(_mgr.class_name);
+			var _acl = $p.current_user.get_acl(_mgr.class_name);
 
 			wnd.elmnts.pg_header = wnd.elmnts.tabs.tab_header.attachHeadFields({
 				obj: o,
@@ -12175,7 +12047,7 @@ DataManager.prototype.form_obj = function(pwnd, attr){
 		wnd.elmnts.frm_tabs.addTab('tab_'+name, '&nbsp;'+_meta.tabular_sections[name].synonym+'&nbsp;');
 		wnd.elmnts.tabs['tab_'+name] = wnd.elmnts.frm_tabs.cells('tab_'+name);
 
-		var _acl = $p.current_acl.get_acl(_mgr.class_name);
+		var _acl = $p.current_user.get_acl(_mgr.class_name);
 
 		wnd.elmnts.grids[name] = wnd.elmnts.tabs['tab_'+name].attachTabular({
 			obj: o,
@@ -12206,7 +12078,7 @@ DataManager.prototype.form_obj = function(pwnd, attr){
 				post = false;
 
 			else if(action == "close"){
-				if($p.current_acl.get_acl(_mgr.class_name).indexOf("p") != -1)
+				if($p.current_user.get_acl(_mgr.class_name).indexOf("p") != -1)
 					post = true;
 			}
 		}
@@ -12632,7 +12504,7 @@ DataManager.prototype.form_selection = function(pwnd, attr){
 			wnd.elmnts.filter = new $p.iface.Toolbar_filter(tbattr);
 
 
-			var _acl = $p.current_acl.get_acl(_mgr.class_name);
+			var _acl = $p.current_user.get_acl(_mgr.class_name);
 
 			if(_acl.indexOf("i") == -1)
 				this.hideItem("btn_new");
@@ -14071,7 +13943,7 @@ $p.eve.__define({
 					setTimeout(function () {
 						$p.iface.frm_auth({
 							modal_dialog: true,
-							try_auto: true
+							try_auto: false
 						});
 					}, 100);
 				}
@@ -14521,7 +14393,7 @@ SpreadsheetDocument.prototype.__define({
       }
 
       for(var i = 0; i < rows.length; i++){
-        this.put(dhx4.template(template.innerHTML, rows[i]), template.attributes);
+        this.put(dhx4.template(template.innerHTML.replace(/<!---/g, '').replace(/--->/g, ''), rows[i]), template.attributes);
       }
     }
   },
