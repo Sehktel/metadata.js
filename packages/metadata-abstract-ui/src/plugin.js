@@ -6,20 +6,15 @@
  * Created 05.10.2016
  */
 
+import meta from './meta';
+import meta_objs from './meta_objs';
+import log_manager from './log_manager';
+import scheme_settings from './scheme_settings';
+
 /**
  * Экспортируем объект-плагин для модификации metadata.js
  */
 export default {
-
-	/**
-	 * ### Модификатор прототипов
-	 * @param constructor {MetaEngine}
-	 * @param classes {Object}
-	 */
-	proto(constructor, classes) {
-		ui(constructor, classes)
-		tabulars(constructor, classes)
-	},
 
 	/**
 	 * ### Модификатор конструктора MetaEngine

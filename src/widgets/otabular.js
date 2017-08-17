@@ -99,7 +99,6 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
 		}
 	};
 
-
   _grid._move_row = function(direction){
     if(attr.read_only){
       return;
@@ -135,7 +134,6 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
 			var rId = get_sel_index();
 
 			if(rId != undefined){
-
 				if(_mgr.handle_event(_obj, "del_row",
 						{
 							tabular_section: _tsname,
@@ -158,15 +156,18 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
 	function get_sel_index(silent){
 		var selId = _grid.getSelectedRowId();
 
-		if(selId && !isNaN(Number(selId)))
-			return Number(selId)-1;
+		if(selId && !isNaN(Number(selId))){
+      return Number(selId)-1;
+    }
 
-		if(!silent)
-			$p.msg.show_msg({
-				type: "alert-warning",
-				text: $p.msg.no_selected_row.replace("%1", _obj._metadata.tabular_sections[_tsname].synonym || _tsname),
-				title: (_obj._metadata.obj_presentation || _obj._metadata.synonym) + ': ' + _obj.presentation
-			});
+		if(!silent){
+      var _tssynonym = (typeof _obj._metadata == 'function' ? _obj._metadata(_tsname) : _obj._metadata.tabular_sections[_tsname]).synonym;
+      $p.msg.show_msg({
+        type: "alert-warning",
+        text: $p.msg.no_selected_row.replace("%1", _tssynonym || _tsname),
+        title: (_meta.obj_presentation || _meta.synonym) + ': ' + _obj.presentation
+      });
+    }
 	}
 
 
@@ -178,8 +179,11 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
 		if(stage != 2 || nValue == oValue)
 			return true;
 
-		var cell_field = _grid.get_cell_field(),
-			ret_code = _mgr.handle_event(_obj, "value_change", {
+		var cell_field = _grid.get_cell_field();
+		if(!cell_field){
+      return true;
+    }
+		var	ret_code = _mgr.handle_event(_obj, "value_change", {
 				field: cell_field.field,
 				value: nValue,
 				tabular_section: _tsname,
@@ -197,17 +201,12 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
 	}
 
 	/**
-	 * наблюдатель за изменениями насбор строк табчасти
+	 * наблюдатель за изменениями строк табчасти
 	 * @param changes
 	 */
-	function observer_rows(changes){
-		if(_grid.clearAll){
-			changes.some(function(change){
-				if (change.type == "rows" && change.tabular == _tsname){
-					_ts.sync_grid(_grid, _selection);
-					return true;
-				}
-			});
+	function listener_rows(obj, fields){
+		if(_obj === obj && fields[_tsname] && _grid.clearAll){
+      _ts.sync_grid(_grid, _selection);
 		}
 	}
 
@@ -215,24 +214,24 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
 	 * наблюдатель за изменениями значений в строках табчасти
 	 * @param changes
 	 */
-	function observer(changes){
-		if(changes.length > 20){
-			try{_ts.sync_grid(_grid, _selection);} catch(err){}
-		} else
-			changes.forEach(function(change){
-				if (_tsname == change.tabular){
-					if(!change.row || _grid.getSelectedRowId() != change.row.row)
-						_ts.sync_grid(_grid, _selection);
-					else{
-						if(_grid.getColIndexById(change.name) != undefined){
-              if(typeof change.oldValue != "boolean" || typeof change.row[change.name] != "boolean"){
-                _grid.cells(change.row.row, _grid.getColIndexById(change.name))
-                  .setCValue($p.utils.is_data_obj(change.row[change.name]) ? change.row[change.name].presentation : change.row[change.name]);
-              }
-            }
-					}
-				}
-			});
+	function listener(obj, fields){
+	  if(obj._owner !== _ts){
+	    return;
+    }
+    const {row} = obj;
+    if(_grid.getSelectedRowId() != row)
+      _ts.sync_grid(_grid, _selection);
+    else{
+      const cc = _grid.getColumnCount();
+      for(let i = 0; i < cc; i++){
+        if(!_grid.isColumnHidden(i)){
+          const val = obj[_grid.getColumnId(i)];
+          if(typeof val != "boolean"){
+            _grid.cells(row, i).setCValue(val.toString());
+          }
+        }
+      }
+    }
 	}
 
 	function onpaste(e) {
@@ -289,7 +288,7 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
 
     if(_input_filter != _cell.input_filter.value){
       _input_filter = new RegExp(_cell.input_filter.value, 'i');
-      observer_rows([{tabular: _tsname, type: "rows"}]);
+      listener_rows(_obj, {[_tsname]: true});
     }
 
   }
@@ -410,17 +409,17 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
 			},
 			set: function (sel) {
 				_selection = sel;
-				observer_rows([{tabular: _tsname, type: "rows"}]);
+        listener_rows(_obj, {[_tsname]: true});
 			}
 		},
 
 		destructor: {
 			value: function () {
 
-				if(_obj){
-					Object.unobserve(_obj, observer);
-					Object.unobserve(_obj, observer_rows);
-				}
+			  if(_mgr){
+          _mgr.off('update', listener);
+          _mgr.off('rows', listener_rows);
+        }
 
 				_obj = null;
 				_ts = null;
@@ -558,11 +557,13 @@ dhtmlXCellObject.prototype.attachTabular = function(attr) {
   });
 
 	// заполняем табчасть данными
-	observer_rows([{tabular: _tsname, type: "rows"}]);
+  listener_rows(_obj, {[_tsname]: true});
 
 	// начинаем следить за объектом и, его табчастью допреквизитов
-	Object.observe(_obj, observer, ["row"]);
-	Object.observe(_obj, observer_rows, ["rows"]);
+  _mgr.on({
+    update: listener,
+    rows: listener_rows,
+  });
 
 	// начинаем следить за буфером обмена
 	_grid.entBox.addEventListener('paste', onpaste);

@@ -736,17 +736,21 @@ function Meta() {
    * ### Загружает объекты с типом кеширования doc_ram в ОЗУ
    * @method load_doc_ram
    */
-  _md.load_doc_ram = function(){
+  _md.load_doc_ram = function() {
     var res = [];
-    ['cat','cch'].forEach(function (kind) {
-      for(var name in _m[kind]){
-        if(_m[kind][name].cachable == 'doc_ram'){
-          res.push($p[kind][name].pouch_find_rows({_top: 1000, _skip: 0}));
+    ['cat','cch','ireg'].forEach(function (kind) {
+      for (var name in _m[kind]) {
+        if (_m[kind][name].cachable == 'doc_ram') {
+          res.push(kind + '.' + name);
         }
       }
     });
-    return Promise.all(res);
-  };
+    return $p.wsql.pouch.local.doc.find({
+      selector: {class_name: {$in: res}},
+      limit: 10000
+    })
+      .then($p.wsql.pouch.load_changes);
+  }
 
 	/**
 	 * ### Инициализирует метаданные
@@ -1079,17 +1083,6 @@ function Meta() {
 				}
 
 				// и через его тип выходми на мнеджера значения
-				// for(rt in oproperty.type.types)
-				// 	if(oproperty.type.types[rt].indexOf(".") > -1){
-				// 		tnames = oproperty.type.types[rt].split(".");
-				// 		break;
-				// 	}
-				// if(tnames && tnames.length > 1 && $p[tnames[0]])
-				// 	return mf_mgr($p[tnames[0]][tnames[1]]);
-				// else
-				// 	return oproperty.type;
-
-				//---
 				rt = [];
 				oproperty.type.types.some(function(v){
 					tnames = v.split(".");

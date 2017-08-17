@@ -165,107 +165,6 @@ if(!Number.prototype.pad)
 		return s;
 	};
 
-/**
- * Полифил обсервера и нотифаера
- */
-if(!Object.observe && !Object.unobserve && !Object.getNotifier){
-	Object.prototype.__define({
-
-		/**
-		 * Подключает наблюдателя
-		 * @method observe
-		 * @for Object
-		 */
-		observe: {
-			value: function(target, observer) {
-				if(!target){
-					return;
-				}
-				if(!target._observers){
-					target.__define({
-						_observers: {
-							value: [],
-							enumerable: false
-						},
-						_notis: {
-							value: [],
-							enumerable: false
-						}
-					});
-				}
-				target._observers.push(observer);
-			},
-			enumerable: false
-		},
-
-		/**
-		 * Отключает наблюдателя
-		 * @method unobserve
-		 * @for Object
-		 */
-		unobserve: {
-			value: function(target, observer) {
-				if(target && target._observers){
-
-					if(!observer){
-						target._observers.length = 0;
-					}
-
-					for(var i=0; i<target._observers.length; i++){
-						if(target._observers[i]===observer){
-							target._observers.splice(i, 1);
-							break;
-						}
-					}
-				}
-			},
-			enumerable: false
-		},
-
-		/**
-		 * Возвращает объект нотификатора
-		 * @method getNotifier
-		 * @for Object
-		 */
-		getNotifier: {
-			value: function(target) {
-				var timer;
-				return {
-					notify: function (noti) {
-
-						if(!target._observers || !noti)
-							return;
-
-						if(!noti.object)
-							noti.object = target;
-
-						target._notis.push(noti);
-						noti = null;
-
-						if(timer){
-							clearTimeout(timer);
-						}
-
-						timer = setTimeout(function () {
-							//TODO: свернуть массив оповещений перед отправкой
-							if(target._notis.length){
-								target._observers.forEach(function (observer) {
-									observer(target._notis);
-								});
-								target._notis.length = 0;
-							}
-							timer = false;
-
-						}, 4);
-					}
-				}
-			},
-			enumerable: false
-		}
-
-	});
-}
-
 
 /**
  * Для совместимости со старыми модулями, публикуем $p глобально
@@ -510,7 +409,7 @@ function MetaEngine() {
 								ok = sel.some(function (element) {
 									var key = Object.keys(element)[0];
 									if(element[key].hasOwnProperty("like"))
-										return o[key] && o[key].toLowerCase().indexOf(element[key].like.toLowerCase())!=-1;
+										return typeof o[key] == "string" && o[key].toLowerCase().indexOf(element[key].like.toLowerCase())!=-1;
 									else
 										return $p.utils.is_equal(o[key], element[key]);
 								});
@@ -649,14 +548,20 @@ function MetaEngine() {
 		 */
 		off: {
 			value: function (id) {
+			  if(arguments.length == 2){
+          id = arguments[1];
+        }
 				if(typeof id == "function" && id._evnts){
 					id._evnts.forEach(function (id) {
 						$p.eve.detachEvent(id);
 					});
-				}else if(!id)
-					$p.eve.detachAllEvents();
-				else
-					$p.eve.detachEvent(id);
+				}
+				else if(!id){
+          $p.eve.detachAllEvents();
+        }
+				else{
+          $p.eve.detachEvent(id);
+        }
 			}
 		},
 

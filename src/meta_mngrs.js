@@ -340,7 +340,7 @@ DataManager.prototype.__define({
 	 */
 	find_rows: {
 		value: function(selection, callback){
-			return $p._find_rows.call(this, this.by_ref, selection, callback);
+			return $p.utils._find_rows.call(this, this.by_ref, selection, callback);
 		}
 	},
 
@@ -431,11 +431,11 @@ DataManager.prototype.__define({
 
           // запрос к alasql
           if(attr.action == "get_tree")
-            return $p.wsql.promise(mgr.get_sql_struct(attr), [])
+            return $p.wsql.alasql.promise(mgr.get_sql_struct(attr), [])
               .then($p.iface.data_to_tree);
 
           else if(attr.action == "get_selection")
-            return $p.wsql.promise(mgr.get_sql_struct(attr), [])
+            return $p.wsql.alasql.promise(mgr.get_sql_struct(attr), [])
               .then(function(data){
                 return $p.iface.data_to_grid.call(mgr, data, attr);
               });
@@ -509,7 +509,7 @@ DataManager.prototype.__define({
    * @return {Promise.<Array>}
    */
   get_option_list: {
-    value: function(val, selection){
+    value: function(selection, val){
 
       var t = this, l = [], input_by_string, text, sel;
 
@@ -746,7 +746,9 @@ DataManager.prototype.__define({
             destinations_extra_fields = t.extra_fields(o),
             pnames = "property,param,Свойство,Параметр".split(","),
             //meta_extra_fields = o._metadata.tabular_sections[extra_fields.ts].fields,
-            meta_extra_fields = o[extra_fields.ts]._owner._metadata.tabular_sections[o[extra_fields.ts]._name].fields,
+            _owner = o[extra_fields.ts]._owner,
+            meta_extra_fields = typeof _owner._metadata == 'function' ?
+              _owner._metadata(o[extra_fields.ts]._name).fields : _owner._metadata.tabular_sections[o[extra_fields.ts]._name].fields,
             pname;
 
           // Если в объекте не найдены предопределенные свойства - добавляем
@@ -1829,7 +1831,7 @@ EnumManager.prototype.__define({
    * @return {Promise.<Array>}
    */
   get_option_list: {
-    value: function(val, selection){
+    value: function(selection, val){
       var l = [], synonym = "", sref;
 
       function check(v){
@@ -1981,28 +1983,24 @@ function RegisterManager(class_name){
 	 * @async
 	 */
 	this.load_array = function(aattr, forse){
-
 		var ref, obj, res = [];
 
 		for(var i=0; i<aattr.length; i++){
-
 			ref = this.get_ref(aattr[i]);
 			obj = this.by_ref[ref];
 
 			if(!obj && !aattr[i]._deleted){
 				obj = new $p[this.obj_constructor()](aattr[i], this);
-				if(forse)
-					obj._set_loaded();
-
-			}else if(obj && aattr[i]._deleted){
-				obj.unload();
+				forse && obj._set_loaded();
+			}
+			else if(aattr[i]._deleted){
+        obj && obj.unload();
 				continue;
-
-			}else if(obj.is_new() || forse){
+			}
+			else if(obj.is_new() || forse){
 				obj._mixin(aattr[i]);
 				obj._set_loaded();
 			}
-
 			res.push(obj);
 		}
 		return res;
