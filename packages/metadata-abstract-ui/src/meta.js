@@ -383,7 +383,30 @@ export default {
             name: 'drawer',
             synonym: 'Панель формы'
           },
-        ]
+        ],
+        report_output: [
+          {
+            order: 0,
+            name: 'grid',
+            synonym: 'Таблица',
+            'default': true
+          },
+          {
+            order: 1,
+            name: 'chart',
+            synonym: 'Диаграмма'
+          },
+          {
+            order: 2,
+            name: 'pivot',
+            synonym: 'Cводная таблица'
+          },
+          {
+            order: 3,
+            name: 'html',
+            synonym: 'Документ HTML'
+          },
+        ],
       },
       cat: {
         meta_objs: {
@@ -466,6 +489,14 @@ export default {
               tooltip: 'Формула инициализации',
               type: {
                 types: ['cat.formulas'],
+                is_ref: true
+              }
+            },
+            output: {
+              synonym: 'Вывод',
+              tooltip: 'Вывод результата',
+              type: {
+                types: ['enm.report_output'],
                 is_ref: true
               }
             },
